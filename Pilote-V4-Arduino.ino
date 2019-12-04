@@ -1,7 +1,8 @@
 
 #include <PID_v1.h>
-#include <SoftwareSerial.h>
+
 #include <AltSoftSerial.h>
+
 #include <EEPROM.h>
 #include <AnalogButtons.h>
 
@@ -10,8 +11,7 @@
 #define   pin_Reverse        4
 #define   pin_Rx_Imu        12
 #define   pin_Tx_Imu        13
-#define   pin_Rx_Bluetooth   8
-#define   pin_Tx_Bluetooth   9
+
 
 #define   barre_max_init    45
 
@@ -24,8 +24,8 @@
 
 #define   pilote_loop_time 100
 
-#define   tension_max      254
-#define   tension_min     -254
+#define   tension_max      100
+#define   tension_min     -100
 
 #define   K_verin      0.00006
 #define   K_boat        0.0002
@@ -47,6 +47,7 @@
 #define prefix_pause          'M'
 #define prefix_actif          'N'
 #define prefix_barre_max      'O'
+#define prefix_start          'Z'
 
 //**************** Input Serial ****************
 
@@ -96,8 +97,8 @@ double     Cap               = 0,
            
 boolean    PID_mode;
 
-SoftwareSerial Navh(pin_Rx_Imu, pin_Tx_Imu); // RX, TX
-AltSoftSerial Bluetooth; // RX, TX
+AltSoftSerial Bluetooth; // RX pin 8, TX pin 9, unusable PWM 10
+
 PID pilote(&Ecart_Cap, &Angle_Barre, &Zero, Kp_pilote, Ki_pilote, Kd_pilote, DIRECT);
 PID moteur(&Ecart_Angle_Barre, &Tension_Moteur, &Zero , Kp_moteur, Ki_moteur, Kd_moteur, DIRECT);
 AnalogButtons analogButtons(pin_Poussoirs, INPUT);
@@ -109,8 +110,8 @@ void setup()
       // initialise Arduino
 
       Serial.begin(9600);
-      Navh.begin(115200);    // connection capteur IMU AHRS
-      Bluetooth.begin(115200); // connection Bluetooth
+      //Navh.begin(57600);    // connection capteur IMU AHRS
+      Bluetooth.begin(57600); // connection Bluetooth
       pinMode(pin_Reverse, INPUT_PULLUP); 
       pinMode(pin_Pwm, INPUT_PULLUP);
                  
@@ -439,19 +440,26 @@ void  bluetooth_check()
    
 void bluetooth_send_param(char prefix, double val)
     {
-
-        Bluetooth.write(prefix);
-        Bluetooth.print(val,0);
-        Bluetooth.println();
-
+    Bluetooth.write(prefix_start);
+    Bluetooth.write(prefix);
+    Bluetooth.print(val,0);
+    Bluetooth.println();
+/*
+    Serial.write(prefix);
+    Serial.print(val,0);
+    Serial.println();
+*/
     }
 
 void bluetooth_send(char prefix)
     {
-
-        Bluetooth.write(prefix);
-        Bluetooth.println();
- 
+    Bluetooth.write(prefix_start);
+    Bluetooth.write(prefix);
+    Bluetooth.println();
+/*
+    Serial.write(prefix);
+    Serial.println();
+*/
     }
     
 //********************** EEPROM ************************************
@@ -501,7 +509,7 @@ void save_Kparam()
       }
 
 //************************************************************************
-
+/*
 struct data
 {
 char f;
@@ -525,7 +533,7 @@ Serial.readBytes(buffer,74);
    
       return *(float *)(buffer);
       }
-
+*/
 //**************************** Simulator **************************
 
 double  old_angle_barre   = 0,
