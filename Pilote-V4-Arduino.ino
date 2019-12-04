@@ -1,6 +1,7 @@
 
 #include <PID_v1.h>
 #include <SoftwareSerial.h>
+#include <AltSoftSerial.h>
 #include <EEPROM.h>
 #include <AnalogButtons.h>
 
@@ -9,8 +10,8 @@
 #define   pin_Reverse        4
 #define   pin_Rx_Imu        12
 #define   pin_Tx_Imu        13
-#define   pin_Rx_Bluetooth  10
-#define   pin_Tx_Bluetooth  11
+#define   pin_Rx_Bluetooth   8
+#define   pin_Tx_Bluetooth   9
 
 #define   barre_max_init    45
 
@@ -96,7 +97,7 @@ double     Cap               = 0,
 boolean    PID_mode;
 
 SoftwareSerial Navh(pin_Rx_Imu, pin_Tx_Imu); // RX, TX
-SoftwareSerial Bluetooth(pin_Rx_Bluetooth, pin_Tx_Bluetooth); // RX, TX
+AltSoftSerial Bluetooth; // RX, TX
 PID pilote(&Ecart_Cap, &Angle_Barre, &Zero, Kp_pilote, Ki_pilote, Kd_pilote, DIRECT);
 PID moteur(&Ecart_Angle_Barre, &Tension_Moteur, &Zero , Kp_moteur, Ki_moteur, Kd_moteur, DIRECT);
 AnalogButtons analogButtons(pin_Poussoirs, INPUT);
@@ -138,7 +139,8 @@ void loop()
       unsigned long duration = 0;
       
       Cap_Reel = simulatorBoat(Angle_Barre_Reel);  // input ange de barre reel , output cap du bateau
-
+      //Cap_reel = read_cap();
+      
       Ecart_Cap = Cap_Reel - Cap;
       if( Ecart_Cap >  180 ) Ecart_Cap -= 360;
       if( Ecart_Cap < -180 ) Ecart_Cap += 360;
@@ -361,7 +363,7 @@ void  bluetooth()
       
 void  bluetooth_check()
       { 
-      if(Bluetooth && Bluetooth.available())
+      if(Bluetooth.available())
       
         switch( Bluetooth.read() )
               {
@@ -437,21 +439,19 @@ void  bluetooth_check()
    
 void bluetooth_send_param(char prefix, double val)
     {
-    if(Bluetooth)
-        {
+
         Bluetooth.write(prefix);
         Bluetooth.print(val,0);
         Bluetooth.println();
-        }
+
     }
 
 void bluetooth_send(char prefix)
     {
-    if(Bluetooth)
-        {
+
         Bluetooth.write(prefix);
         Bluetooth.println();
-        }
+ 
     }
     
 //********************** EEPROM ************************************
@@ -501,13 +501,23 @@ void save_Kparam()
       }
 
 //************************************************************************
- 
+
+struct data
+{
+char f;
+char n;
+float Phi,Theta,Psi,Q0,Q1,Q2,Q3,P,Q,R,Ax,Ay,Az,Ma,Mb,Mz,Menu,Cpu;  
+};
+
 float read_Cap()
       {
+      struct data val;
       char buffer[4];
       
       while( Navh.read() != -1 );   //vide le buffer du port serie
       Navh.write('F');            // envoie une requete
+
+Serial.readBytes(buffer,74);
 
       if( Navh.read() != 'F' ) return -1;   //verifie le premier byte
       Navh.read();                          // lit le second byte
