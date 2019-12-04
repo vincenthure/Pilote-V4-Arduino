@@ -364,7 +364,7 @@ void  bluetooth()
       
 void  bluetooth_check()
       { 
-      if(Bluetooth.available())
+      if(Bluetooth.available()>1)
         {
         if( Bluetooth.read() != prefix_start ) return;
         
