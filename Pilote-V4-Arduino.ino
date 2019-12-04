@@ -365,7 +365,9 @@ void  bluetooth()
 void  bluetooth_check()
       { 
       if(Bluetooth.available())
-      
+        {
+        if( Bluetooth.read() != prefix_start ) return;
+        
         switch( Bluetooth.read() )
               {
               case prefix_cap_moins_10 :   click_minus_10();
@@ -436,6 +438,7 @@ void  bluetooth_check()
                                            break;
              }
           save_Kparam();
+        }
       }
    
 void bluetooth_send_param(char prefix, double val)
