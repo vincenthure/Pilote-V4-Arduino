@@ -1,107 +1,107 @@
 
 #include <PID_v1.h>
-
 #include <AltSoftSerial.h>
-
 #include <EEPROM.h>
 #include <AnalogButtons.h>
 
-#define   pin_Poussoirs     A0
-#define   pin_Pwm            3
-#define   pin_Reverse        4
-#define   pin_Rx_Imu        12
-#define   pin_Tx_Imu        13
+#define   PIN_POUSSOIRS       A0
+#define   PIN_EXTEND           3
+#define   PIN_RETRACT          4
+#define   BLUETOOTH_BAUD   57600
+#define   NAVH_BAUD       115200
 
+#define   BARRE_MAX_INIT      20
+#define   KP_INIT             12
+#define   KI_INIT              4
+#define   KD_INIT             24
+#define   THRESHOLD_INIT       2
+#define   CAP_INIT             0
 
-#define   barre_max_init    45
+#define   PILOTE_LOOP_TIME   100
 
-#define   Kp_pilote_init    16
-#define   Ki_pilote_init     3
-#define   Kd_pilote_init    58
-#define   Kp_moteur_init     6
-#define   Ki_moteur_init     0 
-#define   Kd_moteur_init     0
+//*************** Serial ***************
 
-#define   pilote_loop_time 100
+#define OUTPUT_START             'Z'
+#define OUTPUT_CAP               'A'
+#define OUTPUT_REDRAW            'B'
+#define OUTPUT_BARRE             'C'
+#define OUTPUT_KP                'D'
+#define OUTPUT_KI                'E'
+#define OUTPUT_KD                'F'
+#define OUTPUT_BARRE_BOAT        'G'
+#define OUTPUT_YAW               'H'
+#define OUTPUT_PAUSE             'I'
+#define OUTPUT_ACTIF             'J'
+#define OUTPUT_BARRE_MAX         'K'
+#define OUTPUT_EXTEND            'L'
+#define OUTPUT_RETRACT           'M'
+#define OUTPUT_STOP              'N'
+#define OUTPUT_INFO              'O'
 
-#define   tension_max      100
-#define   tension_min     -100
+#define INPUT_START              'Z'
+#define INPUT_CAP_MOINS_10       'A'
+#define INPUT_CAP_MOINS_1        'B'
+#define INPUT_CAP_PLUS_1         'C'
+#define INPUT_CAP_PLUS_10        'D'
+#define INPUT_STANBY             'E'
+#define INPUT_KP_MOINS           'F'
+#define INPUT_KP_PLUS            'G'
+#define INPUT_KI_MOINS           'H'
+#define INPUT_KI_PLUS            'I'
+#define INPUT_KD_MOINS           'J'
+#define INPUT_KD_PLUS            'K'
+#define INPUT_PARAMETRES_REQUEST 'L'
+#define INPUT_CAP_REQUEST        'M'
+#define INPUT_PARAMETRES_RESET   'N'
+#define INPUT_BARRE_MAX_MOINS    'O'
+#define INPUT_BARRE_MAX_PLUS     'P'
 
-#define   K_verin      0.00006
-#define   K_boat        0.0002
-
-//*************** output Serial ***************
-
-#define prefix_cap            'A'
-#define prefix_redraw         'B'
-#define prefix_tensionMoteur  'C'
-#define prefix_angleBarre     'D'
-#define prefix_kp             'E'
-#define prefix_ki             'F'
-#define prefix_kd             'G'
-#define prefix_angleBarreReel 'H'
-#define prefix_capReel        'I'
-#define prefix_kp2            'J'
-#define prefix_ki2            'K'
-#define prefix_kd2            'L'
-#define prefix_pause          'M'
-#define prefix_actif          'N'
-#define prefix_barre_max      'O'
-#define prefix_start          'Z'
-
-//**************** Input Serial ****************
-
-#define prefix_cap_moins_10    'A'
-#define prefix_cap_moins_1     'B'
-#define prefix_cap_plus_1      'C'
-#define prefix_cap_plus_10     'D'
-#define prefix_stanby          'E'
-#define prefix_kp_moins        'F'
-#define prefix_kp_plus         'G'
-#define prefix_ki_moins        'H'
-#define prefix_ki_plus         'I'
-#define prefix_kd_moins        'J'
-#define prefix_kd_plus         'K'
-#define prefix_pid_request     'L'
-#define prefix_cap_request     'M'
-#define prefix_kp2_moins       'N'
-#define prefix_kp2_plus        'O'
-#define prefix_ki2_moins       'P'
-#define prefix_ki2_plus        'Q'
-#define prefix_kd2_moins       'R'
-#define prefix_kd2_plus        'S'
-#define prefix_reset_pid       'T'
-#define prefix_barre_max_moins 'U'
-#define prefix_barre_max_plus  'V'
 
 //**********************************************
 
-double     Cap               = 0,
-           Cap_Reel          = 0,
-           Zero              = 0,
-           Ecart_Cap         = 0,
-           Tension_Moteur    = 0,
-           Angle_Barre       = 0,
-           Angle_Barre_Reel  = 0,
-           Ecart_Angle_Barre = 0,
-          
-           Kp_moteur         = Kp_moteur_init,
-           Ki_moteur         = Ki_moteur_init,
-           Kd_moteur         = Kd_moteur_init,
-           
-           Kp_pilote         = Kp_pilote_init, 
-           Ki_pilote         = Ki_pilote_init, 
-           Kd_pilote         = Kd_pilote_init,
-           
-           barre_max         = barre_max_init;
-           
-boolean    PID_mode;
+#define VERIN_STOP     0
+#define VERIN_EXTEND   1
+#define VERIN_RETRACT  2
+
+//**********************************************
+struct navh
+      {
+      float roll,pitch,yaw,
+            q0,q1,q2,q3,
+            p,q,r,
+            ax,ay,az,
+            mx,my,mz,
+            menu,cpu;
+      };
+      
+struct parametres
+      {
+      double  kp,
+              ki,
+              kd,
+              barre_max,
+              threshold,
+              cap;  
+      };
+      
+//***********************************************
+
+double     pid_gap    = 0, 
+           pid_barre  = 0,
+           pid_target = 0;
+
+char       verin_state = VERIN_STOP;
+
+boolean    pid_mode;
+
+struct navh imu;
+struct parametres parametre;
 
 AltSoftSerial Bluetooth; // RX pin 8, TX pin 9, unusable PWM 10
 
-PID pilote(&Ecart_Cap, &Angle_Barre, &Zero, Kp_pilote, Ki_pilote, Kd_pilote, DIRECT);
-PID moteur(&Ecart_Angle_Barre, &Tension_Moteur, &Zero , Kp_moteur, Ki_moteur, Kd_moteur, DIRECT);
-AnalogButtons analogButtons(pin_Poussoirs, INPUT);
+PID pilote(&pid_gap, &pid_barre, &pid_target, parametre.kp, parametre.ki, parametre.kd, DIRECT);
+
+AnalogButtons analogButtons(PIN_POUSSOIRS, INPUT);
 
 //******************************************************************************
 
@@ -109,100 +109,112 @@ void setup()
       {
       // initialise Arduino
 
-      Serial.begin(9600);
-      //Navh.begin(57600);    // connection capteur IMU AHRS
-      Bluetooth.begin(57600); // connection Bluetooth
-      pinMode(pin_Reverse, INPUT_PULLUP); 
-      pinMode(pin_Pwm, INPUT_PULLUP);
+      Serial.begin(NAVH_BAUD);         // connection capteur IMU AHRS
+      Bluetooth.begin(BLUETOOTH_BAUD); // connection Bluetooth
+      pinMode(PIN_EXTEND, OUTPUT); 
+      pinMode(PIN_RETRACT,OUTPUT);
                  
       // initialise PID
 
-      PID_mode = true;
+      pid_mode = true;
       pilote.SetMode(AUTOMATIC);
-      pilote.SetOutputLimits(-barre_max, barre_max);
-      pilote.SetSampleTime(pilote_loop_time); 
-  
-      moteur.SetMode(AUTOMATIC);
-      moteur.SetOutputLimits(tension_min, tension_max);
-      moteur.SetSampleTime(pilote_loop_time); 
-
-      // restore parametres from EEprom
-
-      load_Kparam();    
-      load_cap();
+      pilote.SetOutputLimits(-parametre.barre_max, parametre.barre_max);
+      pilote.SetSampleTime(PILOTE_LOOP_TIME); 
+   
+      load_parametres();   // restore parametres from EEprom 
       
-      buttons_init();  // initialise les boutons
+      buttons_init();       // initialise les boutons
       }
 
 void loop()
       {
-      unsigned long starttime = millis();
-      unsigned long duration = 0;
+      unsigned long end_time = millis() + PILOTE_LOOP_TIME;
       
-      Cap_Reel = simulatorBoat(Angle_Barre_Reel);  // input ange de barre reel , output cap du bateau
-      //Cap_reel = read_cap();
-      
-      Ecart_Cap = Cap_Reel - Cap;
-      if( Ecart_Cap >  180 ) Ecart_Cap -= 360;
-      if( Ecart_Cap < -180 ) Ecart_Cap += 360;
+      double barre_boat = SimulatorVerin(verin_state);     
+      imu.yaw   = simulator_boat(barre_boat);  // input ange de barre reel , output cap du bateau
+      //read_navh( &imu );
+      //ask_navh();
+
+      pid_gap = imu.yaw - parametre.cap;
+      //Serial.println(pid_gap);
+      if(pid_gap >  180) pid_gap -= 360;
+      if(pid_gap < -180) pid_gap += 360;
+
+      pilote.Compute();                       // input pid_gap, output pid_barre
+      barre_Compute(barre_boat - pid_barre);  // input ecart de la barre, output commande verrin stop, extend, retract
+
+      bluetooth(imu.yaw, barre_boat, pid_barre);  // envoi info à android pour le monitoring, check bouton pressé sur android
  
-      pilote.Compute();  // input ecart par rapport au cap, output angle de barre
-      
-      Angle_Barre_Reel = simulatorVerin(Tension_Moteur);  // input tension moteur, output angle de barre reel
-      Ecart_Angle_Barre = Angle_Barre_Reel - Angle_Barre;
+ // attends pour faire une boucle bien periodique en scannant les boutons
+  
+      while(millis() < end_time)      analogButtons.check();  
+      }
 
-      moteur.Compute();   // input ecart angle de barre , output tension moteur
-      
-      if (PID_mode)     drive_motor();
+void barre_Compute(double value)
+    {
+    static int lastState=0;
+    verin_state = VERIN_STOP;
 
-      bluetooth();
+    if      (value >  parametre.threshold)       verin_state = VERIN_RETRACT; 
+    else if (value < -parametre.threshold)       verin_state = VERIN_EXTEND; 
 
-      while  (duration<pilote_loop_time)   
+    if      ((lastState != VERIN_STOP)    && (verin_state == VERIN_STOP))     verin(VERIN_STOP);
+    else if ((lastState != VERIN_EXTEND)  && (verin_state == VERIN_EXTEND))   verin(VERIN_EXTEND);
+    else if ((lastState != VERIN_RETRACT) && (verin_state == VERIN_RETRACT))  verin(VERIN_RETRACT);
+
+    lastState = verin_state; 
+    }
+
+void verin(int val)
+      {
+      switch(val)
           {
-          duration = millis() - starttime;
-          analogButtons.check();
+          case VERIN_STOP :    digitalWrite(PIN_RETRACT, LOW);
+                               digitalWrite(PIN_EXTEND, LOW);
+                               bluetooth_send( OUTPUT_STOP ); 
+                               break;
+
+         case VERIN_EXTEND  :  digitalWrite(PIN_RETRACT, LOW);
+                               digitalWrite(PIN_EXTEND, HIGH); 
+                               bluetooth_send( OUTPUT_EXTEND ); 
+                               break; 
+
+          case VERIN_RETRACT : digitalWrite(PIN_RETRACT,HIGH);
+                               digitalWrite(PIN_EXTEND,  LOW);
+                               bluetooth_send( OUTPUT_RETRACT );  
+                               break; 
           }
       }
-
-void reset_PID()
+      
+void reset_parametres()
       {
-      Kp_moteur = Kp_moteur_init,
-      Ki_moteur = Ki_moteur_init,
-      Kd_moteur = Kd_moteur_init,
-           
-      Kp_pilote = Kp_pilote_init, 
-      Ki_pilote = Ki_pilote_init, 
-      Kd_pilote = Kd_pilote_init;
-
-      barre_max = barre_max_init;
+      parametre.kp        = KP_INIT,
+      parametre.ki        = KI_INIT,
+      parametre.kd        = KD_INIT,
+      parametre.barre_max = BARRE_MAX_INIT;
+      parametre.threshold = THRESHOLD_INIT;
       }
 
-double Cap_limit( double val )
+double cap_limit( double val )
       {
       if(val<0)     val+=360;
       if(val>359)   val-=360;
       return val;  
       }
   
-double K_limit( double val )
+double k_limit( double val )
       {
       val=max(val,0);
       val=min(val,254);
       return val;  
       }
       
-void drive_motor()
-      {
-      (Tension_Moteur<0)?digitalWrite(pin_Reverse, HIGH):digitalWrite(pin_Reverse, LOW); 
-      analogWrite(pin_Pwm, abs(Tension_Moteur)); 
-      }
-          
 //***************************** Button ****************************************
 
-Button btn1 = Button(510, &click_minus_10, &click_minus_10, 1000, 500);
-Button btn2 = Button(681, &click_minus_1,  &click_minus_1,  1000, 500);
-Button btn3 = Button(768, &click_plus_1,   &click_plus_1,   1000, 500);
-Button btn4 = Button(819, &click_plus_10,  &click_plus_10,  1000, 500);
+Button btn1 = Button(510, &click_minus_10);
+Button btn2 = Button(681, &click_minus_1);
+Button btn3 = Button(768, &click_plus_1);
+Button btn4 = Button(819, &click_plus_10);
 Button btn5 = Button(  0, &click_stanby);
 
 void buttons_init()
@@ -213,350 +225,265 @@ void buttons_init()
       analogButtons.add(btn4);
       analogButtons.add(btn5);
       }
-      
+
 void click_minus_10()
       {
-      Cap = Cap_limit(Cap-10);
-      if(Serial) bluetooth_send_param(prefix_cap, Cap);
-      save_cap();
+      parametre.cap = cap_limit(parametre.cap-10);
+      bluetooth_send_param(OUTPUT_CAP, parametre.cap);
+      save_parametres();
       }
 
 void click_minus_1()
       {
-      Cap = Cap_limit(Cap-1); 
-      if(Serial) bluetooth_send_param(prefix_cap, Cap);
-      save_cap();
+      parametre.cap = cap_limit(parametre.cap-1); 
+      bluetooth_send_param(OUTPUT_CAP, parametre.cap);
+      save_parametres();
       }
 
 void click_plus_1()
       {
-      Cap = Cap_limit(Cap+1);  
-      if(Serial) bluetooth_send_param(prefix_cap, Cap);
-      save_cap();
+      parametre.cap = cap_limit(parametre.cap+1);  
+      bluetooth_send_param(OUTPUT_CAP, parametre.cap);
+      save_parametres();
       }
 
 void click_plus_10()
       {
-      Cap = Cap_limit(Cap+10);  
-      if(Serial) bluetooth_send_param(prefix_cap, Cap);
+      parametre.cap = cap_limit(parametre.cap+10);  
+      bluetooth_send_param(OUTPUT_CAP, parametre.cap);
+      save_parametres();
       }
 
 void click_stanby()
       {
-      PID_mode = !PID_mode;
-      if(PID_mode)      bluetooth_send( prefix_actif );
-      else              bluetooth_send( prefix_pause );
+      pid_mode = !pid_mode;
+      if(pid_mode)      bluetooth_send( OUTPUT_ACTIF );
+      else              bluetooth_send( OUTPUT_PAUSE );
       }
 
 void click_kp_moins_pilote()
       {
-      Kp_pilote = K_limit(Kp_pilote-1);
-      bluetooth_send_param(prefix_kp,Kp_pilote);        
+      parametre.kp = k_limit(parametre.kp-1);
+      bluetooth_send_param(OUTPUT_KP,parametre.kp);        
       }
 
 void click_kp_plus_pilote()
       {
-      Kp_pilote = K_limit(Kp_pilote+1);
-      bluetooth_send_param(prefix_kp,Kp_pilote); 
+      parametre.kp = k_limit(parametre.kp+1);
+      bluetooth_send_param(OUTPUT_KP,parametre.kp); 
       }
       
 void click_ki_moins_pilote()
       {
-      Ki_pilote = K_limit(Ki_pilote-1);
-      bluetooth_send_param(prefix_ki,Ki_pilote);
+      parametre.ki = k_limit(parametre.ki-1);
+      bluetooth_send_param(OUTPUT_KI,parametre.ki);
       }
 
 void click_ki_plus_pilote()
       {
-      Ki_pilote = K_limit(Ki_pilote+1);
-      bluetooth_send_param(prefix_ki,Ki_pilote);  
+      parametre.ki = k_limit(parametre.ki+1);
+      bluetooth_send_param(OUTPUT_KI,parametre.ki);  
       }
       
 void click_kd_moins_pilote()
       {
-      Kd_pilote = K_limit(Kd_pilote-1);
-      bluetooth_send_param(prefix_kd,Kd_pilote); 
+      parametre.kd = k_limit(parametre.kd-1);
+      bluetooth_send_param(OUTPUT_KD,parametre.kd); 
       } 
 
 void click_kd_plus_pilote()
       {
-      Kd_pilote = K_limit(Kd_pilote+1);
-      bluetooth_send_param(prefix_kd,Kd_pilote); 
-      } 
-
-void click_kp_moins_moteur()
-      {
-      Kp_moteur = K_limit(Kp_moteur-1);
-      bluetooth_send_param(prefix_kp2,Kp_moteur);        
-      }
-
-void click_kp_plus_moteur()
-      {
-      Kp_moteur = K_limit(Kp_moteur+1);
-      bluetooth_send_param(prefix_kp2,Kp_moteur); 
-      }
-      
-void click_ki_moins_moteur()
-      {
-      Ki_moteur = K_limit(Ki_moteur-1);
-      bluetooth_send_param(prefix_ki2,Ki_moteur);
-      }
-
-void click_ki_plus_moteur()
-      {
-      Ki_moteur = K_limit(Ki_moteur+1);
-      bluetooth_send_param(prefix_ki2,Ki_moteur);  
-      }
-      
-void click_kd_moins_moteur()
-      {
-      Kd_moteur = K_limit(Kd_moteur-1);
-      bluetooth_send_param(prefix_kd2,Kd_moteur); 
-      } 
-
-void click_kd_plus_moteur()
-      {
-      Kd_moteur = K_limit(Kd_moteur+1);
-      bluetooth_send_param(prefix_kd2,Kd_moteur); 
+      parametre.kd = k_limit(parametre.kd+1);
+      bluetooth_send_param(OUTPUT_KD,parametre.kd); 
       } 
 
 void click_barre_max_moins()
       {
-      barre_max -=1;
-      bluetooth_send_param(prefix_barre_max,barre_max); 
+      parametre.barre_max -=1;
+      bluetooth_send_param(OUTPUT_BARRE_MAX,parametre.barre_max); 
       } 
 
 void click_barre_max_plus()
       {
-      barre_max += 1;
-      bluetooth_send_param(prefix_barre_max,barre_max); 
+      parametre.barre_max += 1;
+      bluetooth_send_param(OUTPUT_BARRE_MAX,parametre.barre_max); 
       } 
       
-void click_PID()
+void click_parametres()
       {
-      bluetooth_send_param( prefix_kp,        Kp_pilote );
-      bluetooth_send_param( prefix_ki,        Ki_pilote );
-      bluetooth_send_param( prefix_kd,        Kd_pilote );
-      bluetooth_send_param( prefix_kp2,       Kp_moteur );
-      bluetooth_send_param( prefix_ki2,       Ki_moteur );
-      bluetooth_send_param( prefix_kd2,       Kd_moteur ); 
-      bluetooth_send_param( prefix_barre_max, barre_max );    
+      bluetooth_send_param( OUTPUT_KP, parametre.kp );
+      bluetooth_send_param( OUTPUT_KI, parametre.ki );
+      bluetooth_send_param( OUTPUT_KD, parametre.kd );
+      bluetooth_send_param( OUTPUT_BARRE_MAX, parametre.barre_max );    
       }
       
 void click_cap()
       {
-      bluetooth_send_param( prefix_cap, Cap);
-      if(PID_mode)      bluetooth_send( prefix_actif );
-      else              bluetooth_send( prefix_pause );
+      bluetooth_send_param( OUTPUT_CAP, parametre.cap);
+      if(pid_mode)   bluetooth_send( OUTPUT_ACTIF );
+      else           bluetooth_send( OUTPUT_PAUSE );
       }
       
 //******************************** Bluetooth ***************************
 
-void  bluetooth()
+void  bluetooth(double param1, double param2, double param3)
       {
       bluetooth_check();
-      bluetooth_send_param  ( prefix_tensionMoteur,  Tension_Moteur   );
-      bluetooth_send_param  ( prefix_capReel,        Cap_Reel         );
-      bluetooth_send_param  ( prefix_angleBarreReel, Angle_Barre_Reel );
-      bluetooth_send_param  ( prefix_angleBarre,     Angle_Barre      );
-      bluetooth_send        ( prefix_redraw );
+
+      bluetooth_send_param  ( OUTPUT_YAW,   param1 );
+      bluetooth_send_param  ( OUTPUT_BARRE_BOAT, param2 );
+      bluetooth_send_param  ( OUTPUT_BARRE,     param3 );
+      bluetooth_send        ( OUTPUT_REDRAW );
       }
       
 void  bluetooth_check()
       { 
       if(Bluetooth.available()>1)
         {
-        if( Bluetooth.read() != prefix_start ) return;
+        if( Bluetooth.read() != INPUT_START ) return;
         
         switch( Bluetooth.read() )
               {
-              case prefix_cap_moins_10 :   click_minus_10();
-                                           return;                         
+              case INPUT_CAP_MOINS_10 :   click_minus_10();
+                                          return;                         
                           
-              case prefix_cap_moins_1  :   click_minus_1();
-                                           return;   
+              case INPUT_CAP_MOINS_1  :   click_minus_1();
+                                          return;   
                             
-              case prefix_cap_plus_1 :     click_plus_1();
-                                           return;    
+              case INPUT_CAP_PLUS_1 :     click_plus_1();
+                                          return;    
                            
-              case prefix_cap_plus_10 :    click_plus_10();
-                                           return;    
+              case INPUT_CAP_PLUS_10 :    click_plus_10();
+                                          return;    
                           
-              case prefix_stanby :         click_stanby();
-                                           return;
+              case INPUT_STANBY :         click_stanby();
+                                          return;
 
-              case prefix_pid_request :    click_PID();
-                                           return;
+              case INPUT_PARAMETRES_REQUEST :    
+                                          click_parametres();
+                                          return;
 
-              case prefix_cap_request :    click_cap();
-                                           return;
+              case INPUT_CAP_REQUEST :    click_cap();
+                                          return;
 
-              case prefix_kp_moins :       click_kp_moins_pilote();
-                                           break;
+              case INPUT_KP_MOINS :       click_kp_moins_pilote();
+                                          break;
                            
-              case prefix_kp_plus :        click_kp_plus_pilote();
-                                           break;
+              case INPUT_KP_PLUS :        click_kp_plus_pilote();
+                                          break;
                            
-              case prefix_ki_moins :       click_ki_moins_pilote(); 
-                                           break;
+              case INPUT_KI_MOINS :       click_ki_moins_pilote(); 
+                                          break;
                            
-              case prefix_ki_plus :        click_ki_plus_pilote(); 
-                                           break;
+              case INPUT_KI_PLUS :        click_ki_plus_pilote(); 
+                                          break;
                            
-              case prefix_kd_moins    :    click_kd_moins_pilote();
-                                           break;
+              case INPUT_KD_MOINS    :    click_kd_moins_pilote();
+                                          break;
 
-              case prefix_kd_plus :        click_kd_plus_pilote();
-                                           break;
-                                          
-              case prefix_kp2_moins :      click_kp_moins_moteur();
-                                           break;
-                           
-              case prefix_kp2_plus :       click_kp_plus_moteur();
-                                           break;
-                           
-              case prefix_ki2_moins :      click_ki_moins_moteur(); 
-                                           break;
-                           
-              case prefix_ki2_plus :       click_ki_plus_moteur(); 
-                                           break;
-                           
-              case prefix_kd2_moins:       click_kd_moins_moteur();
-                                           break;
-
-              case prefix_kd2_plus :       click_kd_plus_moteur();
-                                           break;
+              case INPUT_KD_PLUS :        click_kd_plus_pilote();
+                                          break;
                                            
-              case prefix_barre_max_moins: click_barre_max_moins();
-                                           break;
+              case INPUT_BARRE_MAX_MOINS: click_barre_max_moins();
+                                          break;
  
-              case prefix_barre_max_plus : click_barre_max_plus();
-                                           break;
+              case INPUT_BARRE_MAX_PLUS : click_barre_max_plus();
+                                          break;
                                           
-              case prefix_reset_pid :      reset_PID();
-                                           click_PID();
-                                           break;
+              case INPUT_PARAMETRES_RESET :      reset_parametres();
+                                          click_parametres();
+                                          break;
              }
-          save_Kparam();
+          save_parametres();
         }
       }
    
 void bluetooth_send_param(char prefix, double val)
     {
-    Bluetooth.write(prefix_start);
+    Bluetooth.write(OUTPUT_START);
     Bluetooth.write(prefix);
     Bluetooth.print(val,0);
     Bluetooth.println();
-/*
-    Serial.write(prefix);
-    Serial.print(val,0);
-    Serial.println();
-*/
     }
 
+void bluetooth_send_info(String str, int val)
+    {
+    Bluetooth.write(OUTPUT_START);
+    Bluetooth.write(OUTPUT_INFO);
+    Bluetooth.print(str);
+    Bluetooth.print(val);
+    Bluetooth.println();
+    }
+    
 void bluetooth_send(char prefix)
     {
-    Bluetooth.write(prefix_start);
+    Bluetooth.write(OUTPUT_START);
     Bluetooth.write(prefix);
     Bluetooth.println();
-/*
-    Serial.write(prefix);
-    Serial.println();
-*/
     }
     
 //********************** EEPROM ************************************
-
-void load_cap()
+      
+void load_parametres()
       {
-      Cap = (double)EEPROM.read(7);  
+      EEPROM.get(0, parametre);
+      pilote.SetTunings(parametre.kp, parametre.ki, parametre.kd);   
+      pilote.SetOutputLimits(-parametre.barre_max, parametre.barre_max);              
       }
       
-void save_cap()
+void save_parametres()
       {
-      EEPROM.write(7,(byte)Cap);  
-      }
-      
-void load_Kparam()
-      {
-      Kp_pilote = (double)EEPROM.read(0);
-      Ki_pilote = (double)EEPROM.read(1);
-      Kd_pilote = (double)EEPROM.read(2);
-      if(Kp_pilote!=255 && Ki_pilote!=255 && Kd_pilote!=255) 
-                    pilote.SetTunings(Kp_pilote, Ki_pilote, Kd_pilote);
-  
-      Kp_moteur = (double)EEPROM.read(3);
-      Ki_moteur = (double)EEPROM.read(4);
-      Kd_moteur = (double)EEPROM.read(5);
-      if(Kp_moteur!=255 && Ki_moteur!=255 && Kd_moteur!=255) 
-                    moteur.SetTunings(Kp_moteur, Ki_moteur, Kd_moteur);
-                    
-      barre_max = (double)EEPROM.read(6);
-      if(barre_max!=255)
-                  pilote.SetOutputLimits(-barre_max, barre_max);              
-      }
-      
-void save_Kparam()
-      {
-      EEPROM.write(0,(byte)Kp_pilote);  
-      EEPROM.write(1,(byte)Ki_pilote);  
-      EEPROM.write(2,(byte)Kd_pilote); 
-      EEPROM.write(3,(byte)Kp_moteur);  
-      EEPROM.write(4,(byte)Ki_moteur);  
-      EEPROM.write(5,(byte)Kd_moteur);
-      EEPROM.write(6,(byte)barre_max);  
-
-      pilote.SetTunings(Kp_pilote, Ki_pilote, Kd_pilote);
-      moteur.SetTunings(Kp_moteur, Ki_moteur, Kd_moteur);
-      pilote.SetOutputLimits(-barre_max, barre_max); 
+      EEPROM.put(0,parametre); 
+      pilote.SetTunings(parametre.kp, parametre.ki, parametre.kd);   
+      pilote.SetOutputLimits(-parametre.barre_max, parametre.barre_max);              
       }
 
 //************************************************************************
-/*
-struct data
-{
-char f;
-char n;
-float Phi,Theta,Psi,Q0,Q1,Q2,Q3,P,Q,R,Ax,Ay,Az,Ma,Mb,Mz,Menu,Cpu;  
-};
 
-float read_Cap()
+int read_navh( navh *buffer )
       {
-      struct data val;
-      char buffer[4];
-      
-      while( Navh.read() != -1 );   //vide le buffer du port serie
-      Navh.write('F');            // envoie une requete
-
-Serial.readBytes(buffer,74);
-
-      if( Navh.read() != 'F' ) return -1;   //verifie le premier byte
-      Navh.read();                          // lit le second byte
-      for(int i=0; i<4; i++) buffer[i]=Navh.read();  //lit les quatres bytes suivant
-   
-      return *(float *)(buffer);
+      while(1)
+          {
+          char c = Serial.read();
+          if(c==-1)    return 0;
+          if(c=='F')
+              if(Serial.read() == 18)   return Serial.readBytes((byte*)buffer,68); 
+              else                      return 0;
+          }
       }
-*/
+      
+void ask_navh()
+    {
+    Serial.write('F');  
+    }
+
 //**************************** Simulator **************************
 
-double  old_angle_barre   = 0,
-        old_Cap           = 0;
-        
-double  simulatorVerin(double tension)
+#define K_BOAT  0.0004
+
+double simulator_boat(double angle_barre)
       {
-      double alpha = old_angle_barre + ( K_verin * pilote_loop_time * tension );
-      if (alpha > barre_max)      alpha = barre_max;
-      if (alpha < -barre_max)     alpha = -barre_max;
-      old_angle_barre = alpha;
-      return alpha;
+      static double heading = 0;
+
+      heading += K_BOAT * PILOTE_LOOP_TIME * angle_barre;
+      return heading;
       }
-    
-double simulatorBoat(double alpha)
-      {
-      double new_Cap = old_Cap + ( K_boat * pilote_loop_time * alpha);
-      old_Cap = new_Cap;
-      return new_Cap;
-      }
+
+#define K_VERIN 0.01
+
+double SimulatorVerin(char action)
+    {
+    static double Barre = 0;
+    switch(action)
+        {
+        case VERIN_EXTEND  : Barre += K_VERIN * PILOTE_LOOP_TIME;
+                             break;
+                             
+        case VERIN_RETRACT : Barre -= K_VERIN * PILOTE_LOOP_TIME;
+                             break;        
+        }
+    return Barre;
+    }
         
 
     
