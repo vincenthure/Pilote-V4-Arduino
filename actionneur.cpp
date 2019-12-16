@@ -14,10 +14,11 @@ void Actionneur::setThreshold(double Threshold)
     threshold = Threshold;  
     }
 
-void Actionneur::action(double boat, double capteur)
+int Actionneur::action(double boat, double capteur)
     {
     double value = boat - capteur;
-    char new_state = VERIN_STOP;
+    int new_state = VERIN_STOP;
+    int action    = VERIN_NULL;
 
     if      (value >  threshold)       new_state = VERIN_RETRACT; 
     else if (value < -threshold)       new_state = VERIN_EXTEND; 
@@ -26,27 +27,28 @@ void Actionneur::action(double boat, double capteur)
                 {
                 digitalWrite(PIN_RETRACT, LOW);
                 digitalWrite(PIN_EXTEND, LOW);
-                //bluetooth.send( OUTPUT_STOP ); 
+                action = VERIN_STOP; 
                 }
                 
     else if ((verin_state != VERIN_EXTEND)  && (new_state == VERIN_EXTEND))   
                 {
                 digitalWrite(PIN_RETRACT, LOW);
                 digitalWrite(PIN_EXTEND, HIGH); 
-                //bluetooth.send( OUTPUT_EXTEND );
+                action =  VERIN_EXTEND;
                 }
                 
     else if ((verin_state != VERIN_RETRACT) && (new_state == VERIN_RETRACT))
                 {
                 digitalWrite(PIN_RETRACT,HIGH);
                 digitalWrite(PIN_EXTEND,  LOW);
-                //bluetooth.send( OUTPUT_RETRACT ); 
+                action =  VERIN_RETRACT; 
                 }
 
     verin_state =  new_state; 
+    return action;
     }
 
-char Actionneur::getVerin()
+int Actionneur::getVerin()
     {
     return verin_state; 
     }

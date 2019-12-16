@@ -22,7 +22,7 @@ struct   parametres parametre;
 
 PID           asservissement(&gap, &barre, &target, 0, 0, 0, DIRECT);
 
-Navh          navh(&imu);
+//Navh          navh(&imu);
 Simulator     simulator(PILOTE_LOOP_TIME);
 Bluetooth     bluetooth(&parametre);
 Actionneur    actionneur;
@@ -53,13 +53,17 @@ void setup()
       analogButtons.add(btn3);
       analogButtons.add(btn4);
       analogButtons.add(btn5);
+
+      Serial.begin(115200);
+      Serial.println("setup");   
       }
       
 void loop()
       {
       unsigned long end_time = millis() + PILOTE_LOOP_TIME;
       
-      double capteur_barre = simulator.verin(actionneur.getVerin());     
+      double capteur_barre = simulator.verin(actionneur.getVerin());
+    
       imu.yaw   = simulator.boat(capteur_barre);
       //navh.read();
       //navh.ask();
@@ -69,7 +73,17 @@ void loop()
       asservissement.Compute();                       // input gap, output barre
       
       if(parametre.stanby==false)
-              actionneur.action(capteur_barre , barre);  // input ecart de la barre, output commande verrin stop, extend, retract
+              switch(actionneur.action(capteur_barre , barre))   // input ecart de la barre, output commande verrin stop, extend, retract
+                        {
+                        case VERIN_STOP:    bluetooth.stop();
+                                            break;
+
+                        case VERIN_EXTEND:  bluetooth.extend();
+                                            break;
+
+                        case VERIN_RETRACT: bluetooth.retract();
+                                            break;
+                        }
 
       bluetooth.arduino_refresh(imu.yaw, capteur_barre, barre);  // monitoring android
       
@@ -80,9 +94,7 @@ void loop()
                         asservissement.SetTunings(parametre.kp, parametre.ki, parametre.kd);
                         actionneur.setThreshold(parametre.threshold); 
                         }
-                        
-      
-      
+                             
       while(millis() < end_time)   analogButtons.check();    // scan les boutons
       }
 

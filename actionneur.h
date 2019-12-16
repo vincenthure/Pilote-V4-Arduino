@@ -1,6 +1,7 @@
 #ifndef actionneur_h
 #define actionneur_h
 
+#define VERIN_NULL    -1
 #define VERIN_STOP     0
 #define VERIN_EXTEND   1
 #define VERIN_RETRACT  2
@@ -12,13 +13,13 @@ class Actionneur
   public:
 
     Actionneur();
-    void Actionneur::action(double, double);
-    char getVerin();
+    int Actionneur::action(double, double);
+    int getVerin();
     void setThreshold(double);
 
   private:
   
-    char verin_state;
+    int verin_state;
     double threshold;
   };
 

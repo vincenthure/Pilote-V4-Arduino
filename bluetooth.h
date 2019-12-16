@@ -73,15 +73,18 @@ class Bluetooth
     void click_minus_1();
     void click_plus_1();
     void click_plus_10();
-    void click_stanby(); 
-     
+    void click_stanby();
+    void stop();
+    void extend();
+    void retract(); 
+ 
+       
   private:
 
     AltSoftSerial arduino; // RX pin 8, TX pin 9, unusable PWM 10
     parametres *parametre;
     
     void click_kp_moins_pilote();
-    void (*f1)(void);
     void click_kp_plus_pilote();
     void click_ki_moins_pilote();
     void click_ki_plus_pilote();
@@ -94,7 +97,7 @@ class Bluetooth
     void click_reset_parametres();
     double cap_limit( double );
     double k_limit( double );
-
+    
     void  send_(char);
     void  send_param(char, double);
     void  send_info(String, int);

@@ -37,8 +37,11 @@
 #define ANALOGBUTTONS_SAMPLING_INTERVAL 20
 #endif 
 
+#include "bluetooth.h"
+
 class Button {
   friend class AnalogButtons;
+  
 public:
   Button() {};
   Button(uint16_t value, void (*clickFunction)(void) = 0, void (*holdFunction)(void) = 0, uint16_t holdDuration = 1000, uint16_t holdInterval = 250);
@@ -57,12 +60,24 @@ public:
       pressed();
   }
 private:
+
+friend void Bluetooth::click_minus_10();
+
+  void fnc1(void);
+  /*
+  void fnc2();
+  void fnc3();
+  void fnc4();
+  void fnc5();
+  */
   uint16_t value;
   uint32_t duration;
   uint16_t interval;
   boolean isHeldDown;
   void (*clickFunction)(void);
   void (*holdFunction)(void);
+
+
 };
 
 class AnalogButtons {
@@ -84,11 +99,12 @@ private:
 
   Button* debounceButton;
 
+
 public:
+
   AnalogButtons(uint8_t pin, uint8_t mode = INPUT, uint16_t debounce = 5, uint8_t margin = 10);
 
   void add(Button button);
-
   void check();
 };
 

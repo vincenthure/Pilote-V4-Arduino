@@ -4,7 +4,6 @@
 Bluetooth::Bluetooth(parametres* param)
      {
      parametre = param; 
-     f1 = (void *)&click_minus_10;
      }
 
 void Bluetooth::begin()
@@ -220,4 +219,19 @@ void Bluetooth::send_info(String str, int val)
     arduino.print(str);
     arduino.print(val);
     arduino.println();
+    }
+
+void Bluetooth::stop()
+    {
+    send_(OUTPUT_STOP);
+    }
+
+void Bluetooth::extend()
+    {
+    send_(OUTPUT_EXTEND);
+    }
+
+void Bluetooth::retract()
+    {
+    send_(OUTPUT_RETRACT);
     }
