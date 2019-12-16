@@ -15,7 +15,8 @@
 
 double   gap, 
          barre,
-         target = 0;
+         target = 0,
+         capteur_barre;
 
 struct   navh       imu;
 struct   parametres parametre;
@@ -57,12 +58,10 @@ void setup()
       Serial.begin(115200);
       Serial.println("setup");   
       }
-      
-void loop()
+
+void pilote()
       {
-      unsigned long end_time = millis() + PILOTE_LOOP_TIME;
-      
-      double capteur_barre = simulator.verin(actionneur.getVerin());
+      capteur_barre = simulator.verin(actionneur.getVerin());
     
       imu.yaw   = simulator.boat(capteur_barre);
       //navh.read();
@@ -83,8 +82,19 @@ void loop()
 
                         case VERIN_RETRACT: bluetooth.retract();
                                             break;
-                        }
+                        } 
+      }
+      
+void loop()
+      {
+      static unsigned long next_time = 0;
 
+      if( millis() > next_time  )
+            {
+            pilote();
+            next_time = millis() + PILOTE_LOOP_TIME;
+            }
+            
       bluetooth.arduino_refresh(imu.yaw, capteur_barre, barre);  // monitoring android
       
       if( bluetooth.arduino_scan() )
@@ -94,8 +104,8 @@ void loop()
                         asservissement.SetTunings(parametre.kp, parametre.ki, parametre.kd);
                         actionneur.setThreshold(parametre.threshold); 
                         }
-                             
-      while(millis() < end_time)   analogButtons.check();    // scan les boutons
+
+      analogButtons.check();    // scan les boutons
       }
 
 void fnc1()
