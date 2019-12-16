@@ -15,8 +15,7 @@
 
 double   gap, 
          barre,
-         target = 0,
-         capteur_barre;
+         target = 0;
 
 struct   navh       imu;
 struct   parametres parametre;
@@ -58,10 +57,33 @@ void setup()
       Serial.begin(115200);
       Serial.println("setup");   
       }
+    
+void loop()
+      {
+      static unsigned long next_time = 0;
+
+      if( millis() > next_time  )
+            {
+              Serial.println(millis()-next_time);
+            next_time = millis() + PILOTE_LOOP_TIME;
+            pilote();
+            }
+            
+      
+      if( bluetooth.arduino_scan() )  // si la remote android à modifier un parametre
+                        {
+                        EEPROM.put(0,parametre); 
+                        asservissement.SetOutputLimits(-parametre.barre_max, parametre.barre_max);
+                        asservissement.SetTunings(parametre.kp, parametre.ki, parametre.kd);
+                        actionneur.setThreshold(parametre.threshold); 
+                        }
+
+      analogButtons.check();    // scan les boutons
+      }
 
 void pilote()
       {
-      capteur_barre = simulator.verin(actionneur.getVerin());
+      double capteur_barre = simulator.verin(actionneur.getVerin());
     
       imu.yaw   = simulator.boat(capteur_barre);
       //navh.read();
@@ -82,32 +104,11 @@ void pilote()
 
                         case VERIN_RETRACT: bluetooth.retract();
                                             break;
-                        } 
-      }
-      
-void loop()
-      {
-      static unsigned long next_time = 0;
-
-      if( millis() > next_time  )
-            {
-            pilote();
-            next_time = millis() + PILOTE_LOOP_TIME;
-            }
-            
-      bluetooth.arduino_refresh(imu.yaw, capteur_barre, barre);  // monitoring android
-      
-      if( bluetooth.arduino_scan() )
-                        {
-                        EEPROM.put(0,parametre); 
-                        asservissement.SetOutputLimits(-parametre.barre_max, parametre.barre_max);
-                        asservissement.SetTunings(parametre.kp, parametre.ki, parametre.kd);
-                        actionneur.setThreshold(parametre.threshold); 
                         }
-
-      analogButtons.check();    // scan les boutons
+                        
+      bluetooth.arduino_refresh(imu.yaw, capteur_barre, barre);  // monitoring android
       }
-
+      
 void fnc1()
     {
     bluetooth.click_minus_10();     
