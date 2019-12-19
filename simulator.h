@@ -1,8 +1,9 @@
 #ifndef simulator_h
 #define simulator_h
 
-#define K_BOAT  0.0004
-#define K_VERIN 0.01
+#define K_BOAT       0.0004
+#define K_VERIN      0.01
+#define TIME_RAMPE 300
 
 class Simulator
     {
@@ -14,8 +15,8 @@ class Simulator
 
     private:
 
-    double barre;
-    unsigned long loop_time;
+    double  kboat,
+            kverin;
     };
 
 #endif

@@ -26,7 +26,7 @@ void AnalogButtons::add(Button button) {
     }
 }
 
-void AnalogButtons::check() {
+bool AnalogButtons::check() {
   // In case this function gets called very frequently avoid sampling the analog pin too often
   if (millis() - time > ANALOGBUTTONS_SAMPLING_INTERVAL) {
     time = millis();
@@ -43,7 +43,7 @@ void AnalogButtons::check() {
           if (++counter >= debounce) {
             // button properly debounced
             lastButtonPressed = &buttons[i];
-            previousMillis = millis();
+            previousMillis = millis();   
           }
         } else {
           if (!buttons[i].isHeldDown && ((millis() - previousMillis) > buttons[i].duration)) {

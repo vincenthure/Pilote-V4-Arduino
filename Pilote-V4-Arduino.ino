@@ -13,12 +13,12 @@
 
 //******************** declaration ***************************
 
-double   gap, 
-         barre,
-         target = 0;
+double        gap, 
+              barre,
+              target = 0;
 
-struct   navh       imu;
-struct   parametres parametre;
+struct        navh       imu;
+struct        parametres parametre;
 
 PID           asservissement(&gap, &barre, &target, 0, 0, 0, DIRECT);
 
@@ -62,9 +62,8 @@ void loop()
       {
       static unsigned long next_time = 0;
 
-      if( millis() > next_time  )
+      if( millis() >= next_time  )
             {
-              Serial.println(millis()-next_time);
             next_time = millis() + PILOTE_LOOP_TIME;
             pilote();
             }
@@ -78,7 +77,7 @@ void loop()
                         actionneur.setThreshold(parametre.threshold); 
                         }
 
-      analogButtons.check();    // scan les boutons
+      analogButtons.check();     // scan les boutons
       }
 
 void pilote()
@@ -109,27 +108,32 @@ void pilote()
       bluetooth.arduino_refresh(imu.yaw, capteur_barre, barre);  // monitoring android
       }
       
-void fnc1()
-    {
-    bluetooth.click_minus_10();     
-    }
-      
-void fnc2()
-    {
-    bluetooth.click_minus_1();     
-    }
+void fnc1() 
+    { 
+    bluetooth.click_minus_10();
+    EEPROM.put(0,parametre); 
+    }     
+        
+void fnc2() 
+    { 
+    bluetooth.click_minus_1();  
+    EEPROM.put(0,parametre); 
+    }     
+    
+void fnc3() 
+    { 
+    bluetooth.click_plus_1();   
+    EEPROM.put(0,parametre); 
+    }     
 
-void fnc3()
-    {
-    bluetooth.click_plus_1();     
-    }
+void fnc4() 
+    { 
+    bluetooth.click_plus_10();  
+    EEPROM.put(0,parametre); 
+    }     
 
-void fnc4()
-    {
-    bluetooth.click_plus_10();     
-    }
-
-void fnc5()
-    {
-    bluetooth.click_stanby();     
-    }
+void fnc5() 
+    { 
+    bluetooth.click_stanby();   
+    EEPROM.put(0,parametre); 
+    }     

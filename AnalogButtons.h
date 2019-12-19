@@ -105,7 +105,7 @@ public:
   AnalogButtons(uint8_t pin, uint8_t mode = INPUT, uint16_t debounce = 5, uint8_t margin = 10);
 
   void add(Button button);
-  void check();
+  bool check();
 };
 
 #endif
