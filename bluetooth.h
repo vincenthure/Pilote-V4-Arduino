@@ -21,6 +21,7 @@
 #define OUTPUT_RETRACT           'M'
 #define OUTPUT_STOP              'N'
 #define OUTPUT_INFO              'O'
+#define OUTPUT_THRESHOLD         'P'
 
 #define INPUT_START              'Z'
 #define INPUT_CAP_MOINS_10       'A'
@@ -39,6 +40,8 @@
 #define INPUT_PARAMETRES_RESET   'N'
 #define INPUT_BARRE_MAX_MOINS    'O'
 #define INPUT_BARRE_MAX_PLUS     'P'
+#define INPUT_THRESHOLD_MOINS    'Q'
+#define INPUT_THRESHOLD_PLUS     'R'
 
 #define   BARRE_MAX_INIT      20
 #define   KP_INIT             12
@@ -92,6 +95,8 @@ class Bluetooth
     void click_kd_plus_pilote();
     void click_barre_max_moins();
     void click_barre_max_plus();
+    void click_threshold_moins();
+    void click_threshold_plus();
     void click_parametres();
     void click_cap();
     void click_reset_parametres();

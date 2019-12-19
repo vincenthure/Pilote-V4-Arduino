@@ -64,7 +64,7 @@ bool PID::Compute()
    {
       /*Compute all the working error variables*/
 
-      /* Adapte la 
+      /* Adapte la librarie au cap */
       double input = *myInput;
       if(input >  180) input -= 360;
       if(input < -180) input += 360;

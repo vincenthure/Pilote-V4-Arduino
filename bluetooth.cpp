@@ -64,6 +64,12 @@ boolean Bluetooth::arduino_scan()
               case INPUT_BARRE_MAX_PLUS :     click_barre_max_plus();
                                               return true;
                                           
+              case INPUT_THRESHOLD_MOINS:     click_threshold_moins();
+                                              return true;
+ 
+              case INPUT_THRESHOLD_PLUS :     click_threshold_plus();
+                                              return true;              
+                                              
               case INPUT_PARAMETRES_RESET :   click_reset_parametres();
                                               click_parametres();
                                               return true;
@@ -150,13 +156,26 @@ void Bluetooth::click_barre_max_plus()
       parametre->barre_max += 1;
       send_param(OUTPUT_BARRE_MAX,parametre->barre_max); 
       } 
+
+void Bluetooth::click_threshold_moins()
+      {
+      parametre->threshold -=1;
+      send_param(OUTPUT_THRESHOLD,parametre->threshold); 
+      } 
+
+void Bluetooth::click_threshold_plus()
+      {
+      parametre->threshold += 1;
+      send_param(OUTPUT_THRESHOLD,parametre->threshold); 
+      } 
       
 void Bluetooth::click_parametres()
       {
       send_param( OUTPUT_KP, parametre->kp );
       send_param( OUTPUT_KI, parametre->ki );
       send_param( OUTPUT_KD, parametre->kd );
-      send_param( OUTPUT_BARRE_MAX, parametre->barre_max );    
+      send_param( OUTPUT_BARRE_MAX, parametre->barre_max );
+      send_param( OUTPUT_THRESHOLD, parametre->threshold );     
       }
       
 void Bluetooth::click_cap()
