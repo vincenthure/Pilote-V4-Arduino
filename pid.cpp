@@ -63,6 +63,8 @@ bool PID::Compute()
    if(timeChange>=SampleTime)
    {
       /*Compute all the working error variables*/
+
+      /* Adapte la 
       double input = *myInput;
       if(input >  180) input -= 360;
       if(input < -180) input += 360;
