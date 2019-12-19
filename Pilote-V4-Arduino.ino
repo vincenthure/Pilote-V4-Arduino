@@ -92,7 +92,7 @@ void pilote()
 
       asservissement.Compute();                       // input gap, output barre
       
-      if(parametre.stanby==false)
+      if(parametre.stanby == false)
               switch(actionneur.action(capteur_barre , barre))   // input ecart de la barre, output commande verrin stop, extend, retract
                         {
                         case VERIN_STOP:    bluetooth.stop();

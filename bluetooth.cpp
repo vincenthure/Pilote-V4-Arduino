@@ -99,8 +99,8 @@ void Bluetooth::click_plus_10()
 void Bluetooth::click_stanby()
       {
       parametre->stanby = !parametre->stanby;
-      if(parametre->stanby)   send_( OUTPUT_ACTIF );
-      else                    send_( OUTPUT_PAUSE );
+      if(parametre->stanby)   send_( OUTPUT_PAUSE );
+      else                    send_( OUTPUT_ACTIF );
       }
 
 void Bluetooth::click_kp_moins_pilote()
