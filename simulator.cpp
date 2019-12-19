@@ -23,16 +23,15 @@ double Simulator::boat(double angle_barre)
 
 double Simulator::verin(char action)
     {
-    static double barre=0;  
-    static char last_action = VERIN_STOP;
+    static double        barre = 0;  
+    static char          last_action = VERIN_STOP;
     static unsigned long start_time_action = 0;
-    double attack;
     
     if( last_action != action )
             start_time_action = millis();
         
     last_action = action;
-    attack = (double)((millis() - start_time_action))/TIME_RAMPE;
+    double attack = (double)((millis() - start_time_action))/TIME_RAMPE;
     if(attack>1)  attack=1;
       
     switch(action)   
